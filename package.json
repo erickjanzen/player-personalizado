@@ -1,0 +1,8 @@
+{
+  "name": "mini-player-widget",
+  "version": "1.0.0",
+  "description": "Widget estilo MP3 player com espectro e música atual",
+  "main": "main.js",
+  "scripts": { "start": "electron ." },
+  "devDependencies": { "electron": "^33.0.0" }
+}
