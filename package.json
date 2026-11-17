@@ -3,6 +3,44 @@
   "version": "1.0.0",
   "description": "Widget estilo MP3 player com espectro e música atual",
   "main": "main.js",
-  "scripts": { "start": "electron ." },
-  "devDependencies": { "electron": "^33.0.0" }
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win portable --x64"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "26.18.0"
+  },
+  "build": {
+    "appId": "com.erickjanzen.miniplayer",
+    "productName": "Mini Player",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "index.html",
+      "settings.html"
+    ],
+    "extraResources": [
+      {
+        "from": "media.ps1",
+        "to": "media.ps1"
+      },
+      {
+        "from": "media-control.ps1",
+        "to": "media-control.ps1"
+      }
+    ],
+    "win": {
+      "target": [
+        "portable"
+      ],
+      "signAndEditExecutable": false
+    },
+    "portable": {
+      "artifactName": "Mini-Player-1.0.0-portable.exe"
+    }
+  }
 }

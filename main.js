@@ -2,6 +2,7 @@ const { app, BrowserWindow, Tray, Menu, ipcMain, nativeImage, screen, desktopCap
 const path = require('path');
 const fs = require('fs');
 const { spawn } = require('child_process');
+const mediaScriptPath = name => path.join(app.isPackaged ? process.resourcesPath : __dirname, name);
 
 if (!app.requestSingleInstanceLock()) app.quit();
 
@@ -76,7 +77,7 @@ function popup() {
 
 function startMediaWatcher() {
   if (process.platform !== 'win32') return;
-  ps = spawn('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', path.join(__dirname, 'media.ps1')], { windowsHide: true });
+  ps = spawn('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', mediaScriptPath('media.ps1')], { windowsHide: true });
   ps.stderr.on('data', d => console.error('SMTC:', d.toString().trim()));
   ps.on('error', error => console.error('SMTC:', error));
   let buf = '';
@@ -164,7 +165,7 @@ app.whenReady().then(() => {
   ipcMain.handle('media-control', async (_, action, position) => {
     if (!['next','previous','seek','play','pause'].includes(action)) return false;
     return new Promise(resolve => {
-      const args = ['-NoProfile','-ExecutionPolicy','Bypass','-File',path.join(__dirname,'media-control.ps1'), action, String(Number(position) || 0)];
+      const args = ['-NoProfile','-ExecutionPolicy','Bypass','-File',mediaScriptPath('media-control.ps1'), action, String(Number(position) || 0)];
       const child = spawn('powershell.exe', args, { windowsHide: true });
       let out = ''; child.stdout.on('data', d => out += d.toString());
       child.on('close', code => resolve(code === 0 && out.trim() !== 'false'));
