@@ -87,7 +87,7 @@ function apply() {
   $('cover').style.order = cfg.coverSide === 'right' ? 2 : 0;
   $('spectrumBox').style.display = cfg.spectrum ? 'block' : 'none';
   $('prog').style.display = cfg.showProgress ? 'flex' : 'none';
-  if (cfg.spectrum) { $('enableSpec').hidden = !!analyser; } else if (stream) stopSpec();
+  if (cfg.spectrum) { startSpec(); } else stopSpec();
   renderButtons();
   if (cur.thumb) paintTrack(cur);
 }
@@ -113,25 +113,36 @@ function resizeSpectrum() {
   if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
 }
 async function startSpec() {
-  if (startingSpectrum || analyser) return;
+  if (!cfg?.spectrum || startingSpectrum || analyser) return;
   startingSpectrum = true;
   const btn = $('enableSpec');
   btn.disabled = true;
-  btn.textContent = 'Aguardando permissão...';
+  btn.hidden = true;
+  btn.textContent = 'Iniciando espectro...';
+  let captured, ctx;
   try {
-    // Captura de tela com áudio do sistema exige permissão do usuário.
-    // A faixa de vídeo deve continuar ativa: interrompê-la pode encerrar o áudio.
-    const captured = await navigator.mediaDevices.getDisplayMedia({
-      video: true, audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
-      systemAudio: 'include'
+    // Loopback do Windows sem exigir um clique para iniciar a captura.
+    // Mantenha o vídeo ativo para preservar a faixa de áudio associada.
+    captured = await navigator.mediaDevices.getUserMedia({
+      audio: { mandatory: { chromeMediaSource: 'desktop' } },
+      video: { mandatory: { chromeMediaSource: 'desktop', maxWidth: 320, maxHeight: 180, maxFrameRate: 1 } }
     });
+    if (!cfg.spectrum) {
+      captured.getTracks().forEach(t => t.stop());
+      return;
+    }
     const audioTracks = captured.getAudioTracks();
     if (!audioTracks.length) {
       captured.getTracks().forEach(t => t.stop());
-      throw new Error('Nenhum áudio compartilhado. Marque "Compartilhar áudio do sistema" na janela de permissão.');
+      throw new Error('Não foi possível capturar o áudio do sistema.');
     }
-    const ctx = new AudioContext();
+    ctx = new AudioContext();
     await ctx.resume();
+    if (!cfg.spectrum) {
+      captured.getTracks().forEach(t => t.stop());
+      await ctx.close();
+      return;
+    }
     const node = ctx.createAnalyser();
     node.fftSize = 256;
     node.smoothingTimeConstant = .8;
@@ -144,8 +155,10 @@ async function startSpec() {
     resizeSpectrum();
     draw();
   } catch (e) {
+    if (captured) captured.getTracks().forEach(t => t.stop());
+    if (ctx && ctx.state !== 'closed') await ctx.close().catch(console.error);
     console.error('Falha ao ativar espectro:', e);
-    btn.hidden = false;
+    btn.hidden = !cfg?.spectrum;
     btn.title = String(e.message || e);
     btn.textContent = 'Ativar espectro (áudio do sistema)';
   } finally {

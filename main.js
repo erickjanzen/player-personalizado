@@ -29,7 +29,7 @@ function createWindow() {
   win = new BrowserWindow({
     width: W, height: 140, x: wa.x + wa.width - W - 20, y: wa.y + wa.height - 160,
     frame: false, resizable: true, minWidth: 300, minHeight: 110, skipTaskbar: true, show: false, hasShadow: true,
-    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true }
+    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, autoplayPolicy: 'no-user-gesture-required' }
   });
   // Resize the width from the sides; fit the height to the player content.
   win.on('will-resize', (event, bounds, details) => {
@@ -145,7 +145,7 @@ app.whenReady().then(() => {
     try {
       const sources = await desktopCapturer.getSources({ types: ['screen'] });
       if (!sources.length) return callback({});
-      callback({ video: sources[0], audio: 'loopbackWithMute' });
+      callback({ video: sources[0], audio: 'loopback' });
     } catch (error) {
       console.error('Captura de tela/áudio:', error);
       callback({});
